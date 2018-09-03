@@ -1,0 +1,206 @@
+---
+title: "MBA Starting Salary"
+author: "Parv Patni"
+date: "December 26, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+getwd()
+salary.df <- read.csv(paste("MBA Starting Salaries Data.csv",sep = ""))
+library(psych)
+describe(salary.df)
+```
+```{r}
+dim(salary.df)
+head(salary.df)
+```
+
+## Plots
+
+```{r}
+hist(salary.df$age, breaks=20,col="khaki",xlab="Age in years", main="Graph showing age distribution")
+```
+
+```{r}
+salary.df$sex=factor(salary.df$sex, levels=c(1,2), labels=c("Male","Female"))
+plot(salary.df$sex,col = "skyblue",main = "Gender distribution")
+```
+
+```{r}
+hist(salary.df$work_yrs, breaks=20,col="green",xlab="Work Experience in years", main="Work experience distribution")
+```
+
+```{r}
+hist(salary.df$gmat_tot, breaks=40,col="red",xlab="score out of 800", main="Gmat Score distribution")
+```
+
+```{r}
+salary.df$frstlang = factor(salary.df$frstlang, levels=c(1,2), labels=c("English","Others"))
+plot(salary.df$frstlang,col="cyan",main = "Language Distribution")
+```
+
+New Structure of Dataset after changing age and first language Data Type
+```{r}
+str(salary.df)
+```
+
+## Dividing dataset into Placed, Not placed, 999, 998
+
+who got placed and disclosed their salary
+```{r}
+placed.df<-salary.df[which(salary.df$salary>999),]
+View(placed.df)
+dim(placed.df)
+```
+
+Who did not get placed and disclosed
+```{r}
+unplaced.df<-salary.df[which(salary.df$salary==0),]
+View(unplaced.df)
+dim(unplaced.df)
+```
+
+Who did not answer the survey(998)
+```{r}
+notsurveyed.df<-salary.df[which(salary.df$salary==998),]
+View(notsurveyed.df)
+dim(notsurveyed.df)
+```
+
+Who answered the survey but did not disclose salary data
+```{r}
+notdisclosed.df<-salary.df[which(salary.df$salary==999),]
+View(notdisclosed.df)
+dim(notdisclosed.df)
+```
+
+Summing all the 4 sub catagories(103+90+46+35)  
+```{r}
+dim(notdisclosed.df)[1]+dim(placed.df)[1]+dim(unplaced.df)[1]+dim(notsurveyed.df)[1]
+```
+
+We get a total of 274 wich is equal to our original dimensions
+
+Summary of Placed 
+```{r}
+describe(placed.df)
+```
+
+Average Salary of a placed Grad is 103030.74
+
+```{r}
+boxplot(placed.df$salary, horizontal = TRUE, main="Salary", col="darkolivegreen1")
+```
+```{r}
+boxplot(placed.df$age, horizontal = TRUE, main="age distribution for placed Grad", col="darkolivegreen1")
+```
+```{r}
+boxplot(placed.df$work_yrs, horizontal = TRUE, main="Work experience of placed Grad", col="darkolivegreen1")
+```
+
+## Comparison of Salary with Work Experience
+
+```{r}
+library(car)
+scatterplot(x = placed.df$salary , y = placed.df$work_yrs, main="comparison of salaries with work experience" , ylab="Work years", xlab="Salary")
+```
+
+## Comparison of Salary with age
+
+```{r}
+scatterplot(x = placed.df$salary , y = placed.df$age, main="comparison of salary with ages", xlab="Salary", ylab="Age")
+```
+
+## Comparison of Salary with Gmat Score
+
+```{r}
+scatterplot(x = placed.df$salary , y = placed.df$gmat_tot, main="comparison of salary with Gmat Score", xlab="Salary", ylab="Gmat Score")
+```
+
+## Comparing different factors that affect starting salaries
+
+```{r}
+a <- xtabs(~salary + sex + work_yrs, data = placed.df)
+ftable(a)
+```
+
+```{r}
+aggregate(salary~age, data=placed.df,FUN = "mean")
+```
+```{r}
+aggregate(salary~satis, data = placed.df, FUN = "mean")
+```
+It shows that nobody placed has a lower satisfaction level of 1 or 2
+
+Let's take some hypothesis
+
+```{r}
+mytable1 <-xtabs(~salary+work_yrs,data=placed.df)
+chisq.test(mytable1)
+```
+
+Since p<0.01 there is a relationship betweeen work experience and salary
+
+```{r}
+mytable2<-xtabs(~salary+frstlang,data=placed.df)
+chisq.test(mytable2)
+```
+
+Since p<0.01 we can say that there is a relationship between first language and salary
+
+```{r}
+mytable3<-xtabs(~salary+gmat_tot,data=placed.df)
+chisq.test(mytable3)
+```
+
+Since p<0.01 we see there exists a relationship between Total GMAT score and starting salary.
+
+```{r}
+library(corrgram)
+corrgram(salary.df,upper.panel = panel.pie, main="Corrgram of Starting Salaries intercorrelations")
+```
+
+##linear regression models
+
+model1:
+linear model taking age , gmat performance and expereince for consideration indeciding starting salary of mba graduates
+```{r}
+fit <- lm( salary~age+gmat_tpc+work_yrs,data=placed.df)
+summary(fit)
+```
+
+model2:
+linear model taking age,gender, gmat performance and expereince for consideration indeciding starting salary of mba graduates
+
+```{r}
+fit <- lm( salary~age+gmat_tpc+work_yrs+sex,data=placed.df)
+summary(fit)
+```
+
+model3:
+linear model taking age,first language, gmat performance and expereince for consideration indeciding starting salary of mba graduates
+
+```{r}
+fit <- lm( salary~age+gmat_tpc+work_yrs+frstlang,data=placed.df)
+summary(fit)
+```
+
+model4:
+linear model taking job satisfaction, work experience, first language for consideration indeciding starting salary of mba graduates
+```{r}
+fit <- lm( salary~satis+work_yrs+frstlang,data=placed.df)
+summary(fit)
+```
+
+work_yrs and frstlang are significant variables in this model. The multiple R squared value indicates that the model accounts for 24.66% of the variance in the variables The residual error(15740) can be thought of as the average error in predicting salary using work experience, job satisfaction and first language.
+
+```{r}
+ chisq.test(unplaced.df$work_yrs,unplaced.df$satis)
+```
+
+Therefore, students with work experience and unplaced are satidfied with MBA program
